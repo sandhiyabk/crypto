@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZK AnonAuth — Zero-Knowledge Anonymous Authentication</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%94%90%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="app">
+    <!-- ================= Sidebar ================= -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">ZK</div>
+        <div>
+          <div class="brand-title">AnonAuth</div>
+          <div class="brand-sub">Zero-Knowledge Protocol</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-tab="overview"><span>◆</span> Overview</button>
+        <button class="nav-item" data-tab="identity"><span>①</span> Identity &amp; Keys</button>
+        <button class="nav-item" data-tab="interactive"><span>②</span> Interactive Handshake</button>
+        <button class="nav-item" data-tab="nizk"><span>③</span> ZK Login (NIZK)</button>
+        <button class="nav-item" data-tab="ring"><span>④</span> Anonymous Group Auth</button>
+        <button class="nav-item" data-tab="math"><span>⑤</span> The Math</button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="status-line"><span class="dot" id="server-dot"></span><span id="server-status">connecting…</span></div>
+        <div class="group-badge">RFC 3526 · 2048-bit</div>
+      </div>
+    </aside>
+
+    <!-- ================= Main ================= -->
+    <main class="main">
+      <header class="topbar">
+        <h1 id="page-title">Overview</h1>
+        <div class="topbar-actions">
+          <span class="chip" id="id-chip">no identity</span>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- ---------- Overview ---------- -->
+        <section class="tab active" id="tab-overview">
+          <div class="hero">
+            <h2>Prove who you are — <em>without revealing who you are.</em></h2>
+            <p>
+              A zero-knowledge proof lets a prover convince a verifier that a statement is true
+              while revealing <strong>nothing</strong> beyond that truth. This app implements three
+              ZK protocols for anonymous authentication over a network, using a 2048-bit safe-prime
+              group. Your secret key <code>x</code> is generated <strong>only in your browser</strong>
+              and is never transmitted.
+            </p>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <div class="card-ico">②</div>
+              <h3>Interactive Schnorr</h3>
+              <p>Classic 3-move Σ-protocol: <code>t = g<sup>r</sup></code> → challenge <code>c</code> →
+                <code>s = r + c·x</code>. The server checks <code>g<sup>s</sup> = t·y<sup>c</sup></code>.</p>
+              <div class="card-tag">challenge / response</div>
+            </div>
+            <div class="card">
+              <div class="card-ico">③</div>
+              <h3>Fiat–Shamir NIZK</h3>
+              <p>The interactive proof turned non-interactive by hashing the challenge
+                <code>c = H(g, y, t)</code>. One message, bound to a server nonce to stop replay.</p>
+              <div class="card-tag">non-interactive</div>
+            </div>
+            <div class="card">
+              <div class="card-ico">④</div>
+              <h3>AOS Ring Signature</h3>
+              <p>A 1-out-of-n OR-proof. The server learns the signer belongs to a group but
+                <strong>cannot tell which member</strong> signed — true anonymity.</p>
+              <div class="card-tag">anonymous</div>
+            </div>
+          </div>
+
+          <div class="callout">
+            <strong>Security model.</strong> Soundness rests on the discrete-logarithm assumption:
+            forging a proof requires extracting <code>x</code> from <code>y = g<sup>x</sup> mod p</code>.
+            The Fiat–Shamir hash binds every proof to a unique, single-use server nonce.
+          </div>
+        </section>
+
+        <!-- ---------- Identity ---------- -->
+        <section class="tab" id="tab-identity">
+          <div class="panel">
+            <h3>Your identity (prover keys)</h3>
+            <p class="muted">The secret exponent <code>x</code> stays in this browser tab. Only the public
+              key <code>y = g<sup>x</sup> mod p</code> is registered with the server.</p>
+            <div class="row">
+              <label>Display name</label>
+              <input id="in-name" type="text" placeholder="alice" value="alice" />
+            </div>
+            <div class="row buttons">
+              <button class="btn" id="btn-gen">Generate keypair</button>
+              <button class="btn primary" id="btn-register" disabled>Register with server</button>
+              <button class="btn ghost" id="btn-seed">Seed 4 demo members</button>
+            </div>
+            <div class="kv" id="identity-out">
+              <div class="kv-empty">No keypair yet — generate one to begin.</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Server key directory</h3>
+            <p class="muted">Public keys <code>y</code> known to the authenticating service.</p>
+            <div id="registry-out" class="reg-list"><span class="muted">empty</span></div>
+          </div>
+        </section>
+
+        <!-- ---------- Interactive ---------- -->
+        <section class="tab" id="tab-interactive">
+          <div class="panel">
+            <h3>Interactive Schnorr handshake</h3>
+            <p class="muted">A 3-move challenge–response. Step through each message and watch the
+              verification equation hold.</p>
+            <div class="row buttons">
+              <button class="btn" id="int-step1">1 · Send commitment t</button>
+              <button class="btn" id="int-step2" disabled>2 · Fetch challenge c</button>
+              <button class="btn" id="int-step3" disabled>3 · Send response s</button>
+              <button class="btn ghost" id="int-reset">Reset</button>
+            </div>
+            <div class="eq" id="int-eq">equation check appears after step 3</div>
+          </div>
+          <div class="panel transcript-panel">
+            <h3>Protocol transcript</h3>
+            <div class="transcript" id="int-transcript"></div>
+          </div>
+        </section>
+
+        <!-- ---------- NIZK ---------- -->
+        <section class="tab" id="tab-nizk">
+          <div class="panel">
+            <h3>Zero-Knowledge login (non-interactive)</h3>
+            <p class="muted">Prove knowledge of <code>x</code> for your public key in a single message,
+              bound to a fresh server nonce. The server learns only "the prover knows x".</p>
+            <div class="row buttons">
+              <button class="btn primary" id="nizk-run">Request nonce &amp; prove</button>
+            </div>
+            <div class="verdict" id="nizk-verdict"></div>
+          </div>
+          <div class="panel transcript-panel">
+            <h3>Proof (what the server receives)</h3>
+            <div class="transcript" id="nizk-transcript"></div>
+          </div>
+        </section>
+
+        <!-- ---------- Ring ---------- -->
+        <section class="tab" id="tab-ring">
+          <div class="panel">
+            <h3>Anonymous group authentication</h3>
+            <p class="muted">Sign a server nonce on behalf of the whole group. The verifier confirms a
+              valid member signed, but the signature is computationally independent of
+              <em>which</em> member — that choice stays hidden.</p>
+            <div class="row">
+              <label>Sign as</label>
+              <select id="ring-signer"></select>
+            </div>
+            <div class="row checkbox">
+              <label><input type="checkbox" id="ring-reveal" /> Reveal true signer to me (server never sees this)</label>
+            </div>
+            <div class="row buttons">
+              <button class="btn primary" id="ring-run">Request nonce &amp; ring-sign</button>
+            </div>
+            <div class="verdict" id="ring-verdict"></div>
+          </div>
+          <div class="panel transcript-panel">
+            <h3>Ring signature</h3>
+            <div class="transcript" id="ring-transcript"></div>
+          </div>
+        </section>
+
+        <!-- ---------- Math ---------- -->
+        <section class="tab" id="tab-math">
+          <div class="panel">
+            <h3>Why it works</h3>
+            <div class="math-grid">
+              <div>
+                <h4>Schnorr Σ-protocol</h4>
+                <p>Prover knows <code>x</code> with <code>y = g<sup>x</sup></code>.</p>
+                <ul>
+                  <li><b>Commit:</b> <code>r ← Z<sub>q</sub>, t = g<sup>r</sup></code></li>
+                  <li><b>Challenge:</b> <code>c ← Z<sub>q</sub></code></li>
+                  <li><b>Respond:</b> <code>s = r + c·x mod q</code></li>
+                  <li><b>Verify:</b> <code>g<sup>s</sup> = t·y<sup>c</sup></code></li>
+                </ul>
+                <p class="muted">Correctness: <code>g<sup>r+cx</sup> = g<sup>r</sup>(g<sup>x</sup>)<sup>c</sup></code>.
+                  A simulator can fake a transcript for any <code>c</code> by choosing <code>s</code> first
+                  — hence zero-knowledge. Special soundness extracts <code>x</code> from two accepting
+                  transcripts with different challenges.</p>
+              </div>
+              <div>
+                <h4>Fiat–Shamir</h4>
+                <p>Replace the verifier's random challenge with a hash of the commitment (and public
+                  inputs), making the proof non-interactive and directly verifiable:
+                  <code>c = H(g, y, t, msg)</code>.</p>
+                <p class="muted">Binding the hash to a single-use nonce prevents replay attacks.</p>
+              </div>
+              <div>
+                <h4>AOS ring signature</h4>
+                <p>For ring <code>y<sub>0..n-1</sub></code> and real signer <code>k</code>:</p>
+                <ul>
+                  <li>Real index: <code>t<sub>k</sub> = g<sup>r</sup></code></li>
+                  <li>Others <code>i≠k</code>: pick random <code>c<sub>i</sub>, z<sub>i</sub></code>,
+                    set <code>t<sub>i</sub> = g<sup>z<sub>i</sub></sup>·y<sub>i</sub><sup>−c<sub>i</sub></sup></code></li>
+                  <li><code>c = H(msg, y<sub>·</sub>, t<sub>·</sub>)</code>, then
+                    <code>c<sub>k</sub> = c − Σ<sub>i≠k</sub> c<sub>i</sub></code></li>
+                  <li><code>z<sub>k</sub> = r + c<sub>k</sub>·x<sub>k</sub></code></li>
+                  <li>Verify: recompute all <code>t<sub>i</sub></code>, check
+                    <code>Σc<sub>i</sub> = H(…)</code></li>
+                </ul>
+                <p class="muted">All simulated pairs are uniform, so the signature distribution is
+                  identical for every choice of signer — anonymity is unconditional.</p>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Group parameters</h3>
+            <div class="transcript" id="params-out"></div>
+          </div>
+        </section>
+
+      </div><!-- /content -->
+
+      <!-- ---------- Audit log strip ---------- -->
+      <div class="logstrip">
+        <div class="logstrip-head">
+          <span>Server audit log</span>
+          <button class="btn tiny ghost" id="log-refresh">refresh</button>
+        </div>
+        <div class="logstrip-body" id="log-out"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/lib/zk.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "zk-anon-auth",
+  "version": "1.0.0",
+  "description": "Zero-Knowledge Proof protocol for anonymous authentication (Schnorr identification, Fiat-Shamir NIZK, and AOS ring signatures).",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test/zk.test.js && node test/api.test.js",
+    "test:crypto": "node test/zk.test.js",
+    "test:api": "node test/api.test.js"
+  },
+  "keywords": [
+    "zero-knowledge",
+    "cryptography",
+    "anonymous-authentication",
+    "schnorr",
+    "ring-signature",
+    "fiat-shamir"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}
